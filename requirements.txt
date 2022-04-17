@@ -21,6 +21,7 @@ Jinja2==3.0.3
 Mako==1.2.0
 MarkupSafe==2.1.1
 orjson==3.6.7
+passlib==1.7.4
 psycopg2==2.9.3
 psycopg2-binary==2.9.3
 pycodestyle==2.8.0
