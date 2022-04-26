@@ -2,8 +2,13 @@ import enum
 
 
 class RoleType(enum.Enum):
-    approver = "approver"
-    seller = "seller"
-    buyer = "buyer"
-    admin = "admin"
+    approver:str = "approver"
+    seller:str = "seller"
+    buyer:str = "buyer"
+    admin:str = "admin"
     
+
+class ItemState(enum.Enum):
+    pendding:str = "pendding"
+    approved:str = "approved"
+    rejected:str = "rejected"
