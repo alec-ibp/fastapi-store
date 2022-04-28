@@ -8,6 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models import user
 from core.config import settings
 from db.init_db import database
+from models.enums import RoleType
 
 
 class AuthManager:
@@ -37,6 +38,30 @@ class CustomHttpBearer(HTTPBearer):
         except jwt.InvalidTokenError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
+
+
+def is_seller(resquest: Request):
+    if not resquest.state.user["role"] == RoleType.seller:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid authorization")
+
+
+def is_approver(request: Request):
+    if not request.state.user["role"] == RoleType.approver:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid authorization")
+
+
+def is_admin(request: Request):
+    if not request.state.user["role"] == RoleType.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid authorization")
+
+
+def is_buyer(request: Request):
+    if not request.state.user["role"] == RoleType.buyer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid authorization")
 
 
 oauth2_scheme = CustomHttpBearer()
