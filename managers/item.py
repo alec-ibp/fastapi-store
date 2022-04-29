@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 from db.init_db import database
 from models import item
-from models.enums import ItemState
+from models.enums import ItemState, RoleType
 from schemas.request.item import ItemIn
 from schemas.response.item import ItemsOut
 
@@ -12,7 +12,10 @@ from schemas.response.item import ItemsOut
 class ItemManager:
     @staticmethod
     async def __get_item(item_id: int) -> bool:
-        return await database.fetch_one(item.select().where(item.c.id == item_id))
+        item_db = await database.fetch_one(item.select().where(item.c.id == item_id))
+        if item_db != None:
+            return True
+        return False
 
     @staticmethod
     async def create(item_data: ItemIn, user: Dict) -> ItemsOut:
@@ -30,9 +33,12 @@ class ItemManager:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Item does not exist!")
 
     @staticmethod
-    async def get_all(user: Dict) -> List[ItemsOut]:
+    async def get_items(user: Dict) -> List[ItemsOut]:
         id = user["id"]
-        return await database.fetch_all(item.select().where(item.c.seller_id == id))
+        query = item.select()
+        if user["role"] == RoleType.seller:
+            query = item.select().where(item.c.seller_id == id)
+        return await database.fetch_all(query)
         
     @staticmethod
     async def approve(item_id: int) -> None:

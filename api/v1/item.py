@@ -21,7 +21,7 @@ router = APIRouter(
 )
 async def get_items(request: Request):
     user = request.state.user
-    return await ItemManager.get_all(user)
+    return await ItemManager.get_items(user)
 
 
 @router.post(

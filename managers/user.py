@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 from db.init_db import database
 from managers.auth import AuthManager
 from models import user
+from models.enums import RoleType
 from schemas.response.user import UserOut
 
 
@@ -14,6 +15,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserManager:
+
+    @staticmethod
+    async def __get_user(user_id: int) -> bool:
+        user_db = await database.fetch_one(user.select().where(user.c.id == user_id))
+        if user_db != None:
+            return True
+        return False
+
     @staticmethod
     async def register(user_data: Dict) -> str:
         user_data["password"] = pwd_context.hash(user_data["password"])
@@ -41,3 +50,10 @@ class UserManager:
     async def get_all() ->List[UserOut]:
         return await database.fetch_all(user.select())
         
+    @staticmethod
+    async def change_roll(user_id: int, role: RoleType) -> None:
+        if await UserManager.__get_user(user_id):
+            await database.execute(user.update().where(user.c.id == user_id).values(role=role))
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist!")
