@@ -1,3 +1,5 @@
+import os
+import uuid
 from typing import Dict, List
 
 from fastapi import HTTPException, status
@@ -7,7 +9,12 @@ from models import item
 from models.enums import ItemState, RoleType
 from schemas.request.item import ItemIn
 from schemas.response.item import ItemsOut
+from services.store_static_files_s3 import S3Service
+from constants import TEMP_FILE_FOLDER
+from utils.helpers import decode_photo
 
+
+s3 = S3Service()
 
 class ItemManager:
     @staticmethod
@@ -20,6 +27,14 @@ class ItemManager:
     @staticmethod
     async def create(item_data: ItemIn, user: Dict) -> ItemsOut:
         item_data["seller_id"] = user["id"]
+        encoded_photo = item_data.pop("encoded_photo")
+        extension = item_data.pop("extension")
+        name = f"{uuid.uuid4()}.{extension}"
+        path = os.path.join(TEMP_FILE_FOLDER, name)
+        decode_photo(path, encoded_photo)
+        item_data["photo_url"] = s3.upload(path, name, extension)
+        os.remove(path)
+
         _id = await database.execute(item.insert().values(item_data))
         return await database.fetch_one(item.select().where(item.c.id == _id))
 
