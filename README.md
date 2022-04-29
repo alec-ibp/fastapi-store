@@ -1,7 +1,7 @@
 # fastapi-store
-API of an online store basic CRUD for your items to sell.
+API of an online store, basic CRUD for the business logic.
 The items have to be approved for Apporver-user.
-Integrated email nototification for status of rejected, approved and sold item
+Integrated email nototification for status of rejected, approved and sold item.
 
 ## Versions
 - Python 3.8.10
