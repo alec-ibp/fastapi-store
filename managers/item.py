@@ -9,20 +9,20 @@ from models import item
 from models.enums import ItemState, RoleType
 from schemas.request.item import ItemIn
 from schemas.response.item import ItemsOut
+from services.payment_manage_wise import WiseService
 from services.store_static_files_s3 import S3Service
 from constants import TEMP_FILE_FOLDER
 from utils.helpers import decode_photo
 
 
 s3 = S3Service()
+wise = WiseService()
 
 class ItemManager:
     @staticmethod
     async def __get_item(item_id: int) -> bool:
         item_db = await database.fetch_one(item.select().where(item.c.id == item_id))
-        if item_db != None:
-            return True
-        return False
+        return item_db
 
     @staticmethod
     async def create(item_data: ItemIn, user: Dict) -> ItemsOut:
@@ -39,10 +39,12 @@ class ItemManager:
         return await database.fetch_one(item.select().where(item.c.id == _id))
 
     @staticmethod
-    async def buy(item_id: int) -> None:
-        if await ItemManager.__get_item(item_id):
-            # TODO make transfer, confirm and delete sold item
-            await database.execute(item.update().where(item.c.id == item_id).values(status=ItemState.approved))
+    async def buy(item_id: int, user: Dict) -> None:
+        item_db = await ItemManager.__get_item(item_id)
+        fullname = user["firstname"] + " " + user["lastname"]
+        if item_db:
+            async with database.transaction() as transaction_connection:
+                await ItemManager.issue_transaction(transaction_connection, item_db["amount"], fullname, user["iban"], item_id)
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Item does not exist!")
@@ -78,3 +80,10 @@ class ItemManager:
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Item does not exist!")
+
+    @staticmethod
+    async def issue_transaction(transaction_connection, amount, fullname, iban, item_id):
+        quote_id = wise.create_quote(amount)
+        recipient_id = wise.create_recipient_account(fullname, iban)
+        transfer_id = wise.create_transfer(recipient_id, quote_id)
+        wise.fund_transfer(transfer_id)

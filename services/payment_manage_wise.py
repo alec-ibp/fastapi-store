@@ -5,19 +5,18 @@ from fastapi import HTTPException, status
 from core.config import settings
 
 
-class wise:
+class WiseService:
     def __init__(self) -> None:
         self.base_url = settings.WISE_BASE_URL
         self.headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Basic {settings.WISE_ACCESS_TOKEN}'
+            'Authorization': f'Bearer {settings.WISE_ACCESS_TOKEN}'
         }
         self.profile_id = self.__get_profile_id()
 
     def __get_profile_id(self) -> str:
         url = self.base_url + "/v1/profiles"
         response = requests.get(url=url, headers=self.headers)
-
         if response.status_code == 200:
             response = response.json()[0]
             return response["id"]
@@ -63,11 +62,12 @@ class wise:
         url = self.base_url + "/v1/transfers"
         transaction_id = str(uuid.uuid4())
         body = {
-            "targetAccountId": recipient_id,
+            "targetAccount": recipient_id,
             "quoteUuid": quote_id,
             "customerTransactionId": transaction_id,
         }
         response = requests.post(url=url, headers=self.headers, data=json.dumps(body))
+        print(response.text, "#"*20, body)
         if response.status_code == 200:
             response = response.json()
             return response["id"]
@@ -83,5 +83,15 @@ class wise:
         if response.status_code == 201:
             response = response.json()
             return response
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Payment provider is not available at the moment")
+
+    def cancel_funds(self, transfer_id):
+        url = self.base_url + f"/v1/transfers/{transfer_id}/cancel"
+        response = requests.put(url=url, headers=self.headers)
+
+        if response.status_code == 200:
+            response = response.json()
+            return response["id"]
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Payment provider is not available at the moment")

@@ -40,8 +40,9 @@ async def create_item(request: Request, item: ItemIn):
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(oauth2_scheme), Depends(is_buyer)]
 )
-async def buy_item(item_id: int):
-    await ItemManager.buy(item_id)
+async def buy_item(request: Request, item_id: int):
+    user = request.state.user
+    await ItemManager.buy(item_id, user)
 
 
 @router.put(
